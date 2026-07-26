@@ -1,6 +1,5 @@
-FROM node:22-bookworm-slim
+FROM node:22-alpine
 WORKDIR /app
-COPY --chmod=0755 runtime/maritime-init /sbin/maritime-init
 COPY package.json ./
 COPY .codex-plugin ./.codex-plugin
 COPY .mcp.json ./
