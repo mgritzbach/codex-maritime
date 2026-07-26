@@ -1,0 +1,17 @@
+{
+    "mcpServers":  {
+                       "codex-maritime":  {
+                                              "cwd":  ".",
+                                              "command":  "node",
+                                              "args":  [
+                                                           "./scripts/mcp-server.mjs"
+                                                       ],
+                                              "env_vars":  [
+                                                               "CODEX_MARITIME_GATEWAY_URL",
+                                                               "CODEX_MARITIME_TOKEN",
+                                                               "CODEX_MARITIME_PROJECT_ID"
+                                                           ],
+                                              "tool_timeout_sec":  30
+                                          }
+                   }
+}

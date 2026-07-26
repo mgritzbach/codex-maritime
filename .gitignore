@@ -1,0 +1,10 @@
+node_modules/
+.env
+.codex/maritime.local.json
+.codex-maritime/
+data/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+.npm-cache/

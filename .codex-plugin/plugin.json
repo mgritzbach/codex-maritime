@@ -1,0 +1,23 @@
+{
+    "name":  "codex-maritime",
+    "version":  "0.1.0",
+    "description":  "Token-efficient progress updates and remote steering for long-running Codex tasks over Maritime-hosted SMS or messaging channels.",
+    "author":  {
+                   "name":  "Codex Maritime contributors"
+               },
+    "skills":  "./skills/",
+    "interface":  {
+                      "displayName":  "Codex Maritime",
+                      "shortDescription":  "Long-task updates over SMS and WhatsApp.",
+                      "longDescription":  "Connect long-running Codex tasks to a Maritime-hosted gateway for deterministic progress summaries, adjustable quiet hours, steering commands, and scoped Y/N approvals.",
+                      "developerName":  "Codex Maritime contributors",
+                      "category":  "Productivity",
+                      "capabilities":  [
+                                           "Progress notifications",
+                                           "Remote steering",
+                                           "Scoped approvals"
+                                       ],
+                      "defaultPrompt":  "Set up progress tracking for this task with Codex Maritime."
+                  },
+    "mcpServers":  "./.mcp.json"
+}

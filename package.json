@@ -1,0 +1,37 @@
+{
+    "name":  "codex-maritime",
+    "version":  "0.1.0",
+    "description":  "Token-efficient progress updates and remote steering for long-running Codex tasks over Maritime-hosted messaging.",
+    "type":  "module",
+    "license":  "MIT",
+    "engines":  {
+                    "node":  "\u003e=20"
+                },
+    "bin":  {
+                "codex-maritime":  "./scripts/cli.mjs",
+                "codex-maritime-mcp":  "./scripts/mcp-server.mjs"
+            },
+    "files":  [
+                  ".codex-plugin",
+                  ".mcp.json",
+                  "skills",
+                  "scripts",
+                  "src",
+                  "README.md",
+                  "LICENSE"
+              ],
+    "scripts":  {
+                    "test":  "node --test",
+                    "check":  "node scripts/check.mjs",
+                    "start":  "node scripts/cli.mjs gateway"
+                },
+    "keywords":  [
+                     "codex",
+                     "maritime",
+                     "sms",
+                     "whatsapp",
+                     "agent",
+                     "notifications",
+                     "mcp"
+                 ]
+}
