@@ -39,3 +39,24 @@ test("approval replies are exact and one-time", async () => {
   assert.equal(commands[0].decision, "accept");
   assert.equal(commands[0].approvalId, approval.id);
 });
+
+test("uses the configured first-update delay and enforces provider-neutral sender allowlists", async () => {
+  const channel = new RecordingChannel();
+  const service = new GatewayService({
+    store: new MemoryStore(),
+    channel,
+    settings: mergeSettings(DEFAULT_SETTINGS, {
+      notifications: { firstAfterMinutes: 2, repeatEveryMinutes: 5 }
+    }),
+    allowedSenders: ["+15550000000"],
+    now: () => new Date("2026-07-26T16:00:00.000Z")
+  });
+  const task = await service.registerTask({ title: "Live connection test", deviceId: "dev" });
+  assert.match(channel.messages[0], /Updates begin after 2m/);
+  await assert.rejects(
+    () => service.processInbound({ id: "blocked", sender: "+15559999999", text: `/status ${task.code}` }),
+    /Sender is not allowlisted/
+  );
+  const accepted = await service.processInbound({ id: "allowed", sender: "+15550000000", text: `/status ${task.code}` });
+  assert.match(accepted.reply, new RegExp(`\\[${task.code}\\]`));
+});

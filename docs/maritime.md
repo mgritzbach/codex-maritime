@@ -1,22 +1,27 @@
 # Deploy on Maritime
 
-## Recommended SMS path
+## Recommended path
 
-1. Create an OpenClaw Identity agent in Maritime so the phone identity is provisioned.
-2. Obtain or configure the identity-scoped Inkbox API key, phone-number ID, recipient, and signing key.
-3. Deploy this repository as a public Maritime service on port 8787.
-4. Configure the environment variables from `.env.example`.
-5. Point the Inkbox `text.received` webhook to `/webhooks/inkbox`.
-6. Configure a Maritime cron trigger to call authenticated `POST /v1/tick` every minute, or keep the gateway on an always-on tier. The process also ticks itself while awake.
-7. Text `START` to the provisioned number and verify a test task.
+Deploy this repository itself as a public GitHub-backed Maritime service. Do not choose OpenClaw or ZeroClaw for the Sendblue path; the repository is already the deterministic gateway.
 
-A custom service can be created from the repository and Dockerfile with Maritime's GitHub deployment flow. Secrets belong in Maritime environment variables, never in `maritime.json` or Git.
+```sh
+maritime create codex-maritime \
+  --repo https://github.com/mgritzbach/codex-maritime \
+  --branch main \
+  --public \
+  --port 8787
+```
 
-## ZeroClaw
+The dashboard equivalent is New agent, deploy from GitHub, select the repository, enable a public URL, and expose port 8787. Add the variables in `.env.example` as Maritime environment variables, then register the public `/webhooks/sendblue` URL with Sendblue.
 
-ZeroClaw is a good lightweight choice for WhatsApp or other supported channels, but the standard Maritime ZeroClaw template does not provision the SMS identity used above. Connect it through the generic webhook contract:
+Configure a Maritime cron trigger to call authenticated `POST /v1/tick` every minute if the service may sleep. The process performs the same tick internally while awake. Incoming Sendblue webhooks also wake a public service, but they cannot wake it at the moment a scheduled outbound update is due.
 
-- outbound: receive `{ "text": "..." }` from Codex Maritime and send through the configured ZeroClaw channel;
-- inbound: forward allowlisted message IDs, senders, and text to `POST /v1/inbound`.
+Maritime credits cover the deployed compute. Sendblue is a separate external messaging service and is billed by Sendblue; Maritime API budget is only relevant if another component makes model calls. This gateway makes no model calls for routine notifications.
 
-Do not put an LLM between those endpoints. The adapter should route exact bytes and let Codex Maritime parse the control protocol.
+See [Sendblue setup and live test](sendblue.md) for all values, webhook registration, verification, and troubleshooting.
+
+## Other providers
+
+Inkbox remains as an optional compatibility adapter. For WhatsApp or another channel, set `CODEX_MARITIME_CHANNEL=webhook`; the outbound target receives `{ "text": "..." }` and should forward inbound messages to authenticated `POST /v1/inbound`.
+
+OpenClaw or ZeroClaw can sit behind that generic adapter when they uniquely provide a desired channel, but neither is necessary for Sendblue, SMS, RCS, scheduling, progress calculation, or approvals.

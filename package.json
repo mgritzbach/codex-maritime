@@ -1,6 +1,6 @@
 {
     "name":  "codex-maritime",
-    "version":  "0.1.0",
+    "version":  "0.2.0",
     "description":  "Token-efficient progress updates and remote steering for long-running Codex tasks over Maritime-hosted messaging.",
     "type":  "module",
     "license":  "MIT",
@@ -14,10 +14,13 @@
     "files":  [
                   ".codex-plugin",
                   ".mcp.json",
+                  ".env.example",
                   "skills",
                   "scripts",
                   "src",
+                  "docs",
                   "README.md",
+                  "SECURITY.md",
                   "LICENSE"
               ],
     "scripts":  {

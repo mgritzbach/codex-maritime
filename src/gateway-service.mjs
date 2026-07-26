@@ -7,10 +7,11 @@ import { evaluateDelivery, firstUpdateAt, isQuietTime } from "./scheduler.mjs";
 import { createTaskCode, normalizeTaskCode } from "./task-code.mjs";
 
 export class GatewayService {
-  constructor({ store, channel, settings, now = () => new Date() }) {
+  constructor({ store, channel, settings, allowedSenders = [], now = () => new Date() }) {
     this.store = store;
     this.channel = channel;
     this.baseSettings = validateSettings(settings);
+    this.allowedSenders = new Set(allowedSenders);
     this.now = now;
   }
 
@@ -42,7 +43,8 @@ export class GatewayService {
       state.tasks[code] = task;
       return structuredClone(task);
     });
-    await this.channel.send(`[${result.code}] Tracking: ${result.title}\nUpdates begin after 1h if still active.`);
+    const settings = this.effectiveSettings(await this.store.read());
+    await this.channel.send(`[${result.code}] Tracking: ${result.title}\nUpdates begin after ${formatMinutes(settings.notifications.firstAfterMinutes)} if still active.`);
     return result;
   }
 
@@ -115,8 +117,7 @@ export class GatewayService {
   async processInbound({ id = randomUUID(), sender = "unknown", text }) {
     const existing = await this.store.read();
     if (existing.seenInbound[id]) return { duplicate: true };
-    const allowed = (process.env.INKBOX_ALLOWED_SENDERS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-    if (allowed.length && !allowed.includes(sender)) throw new Error("Sender is not allowlisted");
+    if (this.allowedSenders.size && !this.allowedSenders.has(sender)) throw new Error("Sender is not allowlisted");
     const parsed = parseInboundCommand(text);
     const reply = await this.store.mutate((state) => {
       state.seenInbound[id] = this.now().toISOString();
@@ -226,4 +227,10 @@ function applySettings(state, command) {
   if (command.key === "cadence") state.settingsOverride.notifications.repeatEveryMinutes = command.minutes;
   if (command.key === "first") state.settingsOverride.notifications.firstAfterMinutes = command.minutes;
   return `${command.key} set to ${command.minutes} minutes.`;
+}
+
+function formatMinutes(minutes) {
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes % 60 === 0) return `${minutes / 60}h`;
+  return `${minutes}m`;
 }
