@@ -26,3 +26,39 @@ test("HTTP gateway requires bearer auth and creates tasks", async (context) => {
   assert.equal(response.status, 201);
   assert.match((await response.json()).code, /^[23456789A-HJKMNP-TV-Z]{3}$/);
 });
+
+test("Sendblue webhook rejects bad secrets and accepts allowlisted inbound messages", async (context) => {
+  const service = new GatewayService({
+    store: new MemoryStore(),
+    channel: new SilentChannel(),
+    settings: DEFAULT_SETTINGS,
+    allowedSenders: ["+15552220000"]
+  });
+  const server = createHttpServer({ service, token: "test-token", sendblueWebhookSecret: "hook-secret" });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  context.after(() => server.close());
+  const { port } = server.address();
+  const url = `http://127.0.0.1:${port}/webhooks/sendblue`;
+  const payload = JSON.stringify({
+    message_handle: "msg-webhook-1",
+    is_outbound: false,
+    status: "RECEIVED",
+    from_number: "+15552220000",
+    content: "/status"
+  });
+
+  assert.equal((await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", "sb-signing-secret": "wrong" },
+    body: payload
+  })).status, 401);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", "sb-signing-secret": "hook-secret" },
+    body: payload
+  });
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).reply, /Specify a task code/);
+});

@@ -3,8 +3,10 @@ import { timingSafeEqual } from "node:crypto";
 import { resolve } from "node:path";
 import { channelFromEnv } from "./channel.mjs";
 import { DEFAULT_SETTINGS } from "./defaults.mjs";
+import { allowedSendersFromEnv } from "./diagnostics.mjs";
 import { GatewayService } from "./gateway-service.mjs";
 import { extractInkboxInbound, verifyInkboxWebhook } from "./inkbox-webhook.mjs";
+import { extractSendblueInbound, verifySendblueWebhookSecret } from "./sendblue-webhook.mjs";
 import { JsonFileStore } from "./store.mjs";
 
 export function createGatewayFromEnv(env = process.env) {
@@ -26,11 +28,12 @@ export function createGatewayFromEnv(env = process.env) {
   return new GatewayService({
     store: new JsonFileStore(resolve(env.CODEX_MARITIME_STATE_PATH ?? "./data/state.json")),
     channel: channelFromEnv(env),
-    settings
+    settings,
+    allowedSenders: allowedSendersFromEnv(env)
   });
 }
 
-export function createHttpServer({ service, token, inkboxSigningKey = "" }) {
+export function createHttpServer({ service, token, inkboxSigningKey = "", sendblueWebhookSecret = "" }) {
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, "http://localhost");
@@ -46,6 +49,15 @@ export function createHttpServer({ service, token, inkboxSigningKey = "" }) {
         });
         if (!valid) return json(response, 401, { error: "Invalid Inkbox signature" });
         const inbound = extractInkboxInbound(JSON.parse(rawBody));
+        return json(response, 200, inbound ? await service.processInbound(inbound) : { ignored: true });
+      }
+      if (url.pathname === "/webhooks/sendblue" && request.method === "POST") {
+        const valid = verifySendblueWebhookSecret({
+          providedSecret: request.headers["sb-signing-secret"],
+          webhookSecret: sendblueWebhookSecret
+        });
+        if (!valid) return json(response, 401, { error: "Invalid Sendblue webhook secret" });
+        const inbound = extractSendblueInbound(JSON.parse(rawBody));
         return json(response, 200, inbound ? await service.processInbound(inbound) : { ignored: true });
       }
       if (!authorized(request.headers.authorization, token)) return json(response, 401, { error: "Unauthorized" });
